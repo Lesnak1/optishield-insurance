@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiShield — Autonomous Parametric Insurance on GenLayer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #090d16;
+            --bg-card: rgba(18, 24, 38, 0.75);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --accent-purple: #8a2be2;
+            --accent-emerald: #00f5a0;
+            --accent-amber: #f59e0b;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-page);
+            color: #f8fafc;
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .ambient-glow {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1000px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 245, 160, 0.08) 0%, rgba(79, 172, 254, 0.06) 50%, transparent 70%);
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1140px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        /* Navbar */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 18px;
+            backdrop-filter: blur(20px);
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-emerald) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .network-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent-emerald);
+            background: rgba(0, 245, 160, 0.1);
+            border: 1px solid rgba(0, 245, 160, 0.25);
+            padding: 6px 14px;
+            border-radius: 999px;
+        }
+
+        .pulse-dot {
+            width: 8px; height: 8px;
+            background: var(--accent-emerald);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-emerald);
+            animation: pulse-anim 1.5s infinite;
+        }
+
+        @keyframes pulse-anim {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin: 10px 0 20px;
+        }
+
+        .hero h1 {
+            font-size: 44px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1.2;
+            max-width: 800px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--accent-emerald), var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: #94a3b8;
+            max-width: 640px;
+            line-height: 1.6;
+        }
+
+        /* Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 28px;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 24px;
+            padding: 28px;
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
+        .form-input, .form-textarea {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #f8fafc;
+            font-family: var(--font-sans);
+            font-size: 14px;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-emerald);
+            box-shadow: 0 0 12px rgba(0, 245, 160, 0.25);
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, var(--accent-emerald), var(--accent-cyan));
+            color: #090d16;
+            font-weight: 700;
+            font-size: 14px;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 16px rgba(0, 245, 160, 0.25);
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(0, 245, 160, 0.4);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-approved {
+            background: rgba(0, 245, 160, 0.15);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(0, 245, 160, 0.3);
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-amber);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .audit-log {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: #cbd5e1;
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <div class="container">
+        <!-- Navbar -->
+        <nav>
+            <div class="brand-logo">
+                <svg width="24" height="24" viewBox="0 0 98 92" fill="none">
+                    <polygon fill="#00F5A0" points="44.26,32.35 27.72,67.12 43.29,74.9 0,91.93 44.26,0 44.26,32.35"/>
+                    <polygon fill="#00F2FE" points="53.5,32.35 70.04,67.12 54.47,74.9 97.76,91.93 53.5,0 53.5,32.35"/>
+                    <polygon fill="#8A2BE2" points="48.64,43.78 58.33,62.94 48.64,67.69 39.47,62.92 48.64,43.78"/>
+                </svg>
+                OptiShield
+            </div>
+            <div class="network-badge">
+                <div class="pulse-dot"></div>
+                GenLayer Bradbury Testnet (4221)
+            </div>
+        </nav>
+
+        <!-- Hero -->
+        <div class="hero">
+            <h1>Autonomous Parametric <span>Disaster & Flight Insurance</span></h1>
+            <p>Zero-claims-adjuster parametric coverage settled instantly via decentralized neural validator consensus against live FAA, FlightAware, and NOAA authority data.</p>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="dashboard-grid">
+            
+            <!-- Policy Purchase & Claim -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">✈️ Active Policy #0x01 (Flight Disruption)</div>
+                    <span class="status-pill status-pending" id="policyStatus">Coverage Active</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Covered Target (Flight ID)</label>
+                    <input type="text" class="form-input" value="United Airlines UA894 (SFO -> JFK)" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Indemnity Coverage / Premium</label>
+                    <input type="text" class="form-input" value="40.00 GEN Payout (2.00 GEN Premium Paid)" readonly>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border-card); margin: 2px 0;">
+
+                <div class="card-title" style="font-size: 15px;">🚩 File Incident Claim</div>
+
+                <div class="form-group">
+                    <label class="form-label">Official Authority Telemetry URL (FAA / FlightAware)</label>
+                    <input type="text" class="form-input" id="flightUrl" value="https://flightaware.com/api/status/UA894">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Claimant Incident Summary</label>
+                    <input type="text" class="form-input" value="Flight UA894 was officially cancelled at gate due to severe blizzard conditions.">
+                </div>
+
+                <button class="btn-action" id="claimBtn" onclick="processClaim()">
+                    ⚖️ Trigger Neural Consensus Adjudication
+                </button>
+            </div>
+
+            <!-- Adjudication Outcome -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">⚖️ Consensus Adjudication & Payout</div>
+                    <span class="status-pill status-pending" id="verdictPill">Awaiting Claim</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Validator Consensus Rationale</label>
+                    <textarea class="form-textarea" id="rationaleText" readonly style="min-height: 80px;">Click 'Trigger Neural Consensus Adjudication' to independently verify authority web data across GenLayer validators.</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Deterministic On-Chain Settlement</label>
+                    <div id="payoutResult" style="font-size: 13px; color: #94a3b8;">
+                        Pending validator agreement on authority evidence (Requires confidence >= 85).
+                    </div>
+                </div>
+
+                <!-- Audit Log -->
+                <div class="audit-log" id="auditLog">
+                    <div>[System] Initialized OptiShield underwriting pool on GenVM.</div>
+                    <div>[Reserve] 200.0 GEN available in underwriting capacity.</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function processClaim() {
+            const btn = document.getElementById('claimBtn');
+            const log = document.getElementById('auditLog');
+            btn.innerHTML = "⏳ Validators Fetching Live Authority Data...";
+            btn.disabled = true;
+
+            function addLog(msg, color='#cbd5e1') {
+                const div = document.createElement('div');
+                div.style.color = color;
+                div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                log.appendChild(div);
+                log.scrollTop = log.scrollHeight;
+            }
+
+            addLog("Leader validator querying FlightAware live telemetry for UA894...", "#00f2fe");
+
+            setTimeout(() => {
+                addLog("Telemetry received: Status = CANCELLED (Blizzard Alert).", "#00f2fe");
+                addLog("Validators verifying Equivalence Principle (±6 pt confidence check)...", "#00f2fe");
+
+                setTimeout(() => {
+                    document.getElementById('policyStatus').className = "status-pill status-approved";
+                    document.getElementById('policyStatus').innerText = "CLAIM SETTLED";
+
+                    document.getElementById('verdictPill').className = "status-pill status-approved";
+                    document.getElementById('verdictPill').innerText = "APPROVED (CONF: 98%)";
+
+                    document.getElementById('rationaleText').value = "5/5 Validators agreed: FlightAware official authority telemetry confirms flight UA894 was officially CANCELLED due to blizzard alert. Qualifying event confirmed.";
+
+                    document.getElementById('payoutResult').innerHTML = "✅ <strong style='color: #00f5a0'>40.00 GEN Indemnity Disbursed</strong> directly to policyholder on finality.";
+
+                    addLog("Consensus reached: 98% confidence on qualifying cancellation.", "#00f5a0");
+                    addLog("Deterministic Gate: Emitted 40 GEN transfer to policyholder.", "#00f5a0");
+
+                    btn.innerHTML = "✅ Indemnity Payout Settled";
+                }, 1200);
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
