@@ -1,0 +1,20 @@
+{
+  "name": "optishield-insurance",
+  "version": "1.0.0",
+  "description": "Autonomous Parametric Insurance & Multi-Source Event Adjudication Protocol for GenLayer",
+  "scripts": {
+    "lint": "genvm-lint check contracts/optishield.py --json",
+    "test:direct": "pytest tests/direct/ -v",
+    "test:integration": "gltest tests/integration/ -v -s",
+    "test": "npm run test:direct",
+    "deploy": "genlayer deploy contracts/optishield.py"
+  },
+  "dependencies": {
+    "genlayer-js": "^0.2.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "author": "Lesnak1",
+  "license": "MIT"
+}
