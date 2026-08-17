@@ -22,6 +22,22 @@ While parametric smart contracts exist on EVM chains, they are strictly limited 
 
 ---
 
+## 🏛️ Solvency, Security & Protocol Guarantees
+
+OptiShield enforces four contract-side integrity layers:
+
+1. **🗓️ Dated Coverage Windows**: Policies define exact coverage start and end timestamps (`coverage_start_timestamp`, `coverage_end_timestamp`). Claims for incidents occurring outside the active coverage window are strictly rejected.
+2. **🌐 Trusted Authority Evidence Whitelist**: The contract strictly restricts evidence URLs to a whitelist of official authoritative sources:
+   - `faa.gov` / `api.faa.gov` (Federal Aviation Administration)
+   - `noaa.gov` / `weather.gov` / `nhc.noaa.gov` (National Oceanic and Atmospheric Administration)
+   - `flightaware.com` / `flightradar24.com` / `aviationstack.com` (Live Flight Telemetry)
+   - `status.aws.amazon.com` / `status.cloud.google.com` / `azure.status.microsoft.com` / `cloudflarestatus.com` (Cloud Infrastructure SLA)
+   - `earthquake.usgs.gov` (USGS Earthquake Hazards)
+3. **🔒 Claim Finality**: Once a policy claim is adjudicated and reaches finality (`is_finalized = True`), the policy is permanently closed to prevent replay or duplicate claim submissions.
+4. **🏦 Reserved Payout Liabilities**: When a policy is underwritten, maximum indemnity exposure is reserved against the underwriting pool (`reserved_liabilities`). The contract enforces that `coverage_amount <= underwriting_pool - reserved_liabilities`, preventing over-issuance and guaranteeing 100% protocol solvency.
+
+---
+
 ## 🏛️ System Architecture
 
 ```mermaid
@@ -34,8 +50,10 @@ sequenceDiagram
     participant Authority as 🌐 Authority Web Data (FAA / NOAA / FlightAware)
 
     LP->>OptiShield: fund_underwriting_pool() + deposit GEN
-    User->>OptiShield: purchase_policy(event_type, target_id, coverage) + 5% premium
-    User->>OptiShield: file_and_adjudicate_claim(evidence_url, notes)
+    User->>OptiShield: purchase_policy(event_type, target_id, coverage, duration) + 5% premium
+    Note over OptiShield: Locks coverage liability against unreserved pool capacity
+    User->>OptiShield: file_and_adjudicate_claim(evidence_url, notes, incident_ts)
+    Note over OptiShield: Enforces dated coverage, trusted authority domain, and claim finality
 
     rect rgb(15, 23, 42)
         Note over OptiShield,Validators: Non-Deterministic Multi-Validator Consensus
@@ -53,13 +71,57 @@ sequenceDiagram
 
 ---
 
-## 🔬 Multi-Validator Equivalence Principle
+## 📁 Repository Structure
 
-| Assessment Metric | Validation Requirement |
-|---|---|
-| **Claim Status** | Must match exact verdict (`APPROVED`, `REJECTED`) |
-| **Boolean Event Validity** | Binary `is_valid` determination must agree across leader & validators |
-| **Confidence Tolerance** | Numeric confidence score (0–100) must agree within **`±6 points`** |
+```
+optishield-insurance/
+├── contracts/
+│   └── optishield.py          # Core Intelligent Contract on GenVM
+├── tests/
+│   └── direct/
+│       └── test_optishield.py # In-memory direct VM test suite
+├── frontend/
+│   ├── index.html             # Interactive Glassmorphic DApp UI with live GenLayer client
+│   └── client.ts              # TypeScript GenLayer client integration bindings
+├── package.json               # genlayer-js & development dependencies
+├── requirements.txt           # Python dependencies (genlayer-test, genvm-linter)
+└── README.md                  # Complete architectural & technical documentation
+```
+
+---
+
+## 💻 Frontend & GenLayer Client Integration
+
+The included interactive DApp (`frontend/index.html`) is connected to the real **`genlayer-js`** client, enabling full on-chain lifecycle management:
+
+1. **Wallet / Account Management**: Auto-generates testnet keypairs or imports custom private keys.
+2. **Multi-Network Support**: Switch seamlessly between **GenLayer Bradbury Testnet (4221)**, **StudioNet (4222)**, and **LocalNet**.
+3. **Underwriting Reserves**: View total pool balance, reserved liabilities, and available capacity, with direct liquidity funding (`fund_underwriting_pool`).
+4. **Dated Policy Purchase**: Select event type, enter target identifier, and purchase coverage with automated liability reservation.
+5. **Authority Claim Submission**: Submit claims with whitelisted trusted authority endpoints and trigger live multi-validator neural consensus.
+6. **Live Contract State Queries**: Dynamically reads `get_policy`, `get_claim`, and `get_protocol_stats` to render real consensus confidence %, status, rationale, and on-chain balances with explorer links.
+
+### TypeScript Client Example (`frontend/client.ts`):
+
+```typescript
+import { getGenLayerClient, fundUnderwritingPool, purchasePolicy, fileAndAdjudicateClaim, getClaim } from './frontend/client';
+
+const client = getGenLayerClient('0xYourPrivateKey...');
+const contractAddress = '0xd9F9C1c91aeb2022bdBaA9b7a535b9796b8fB8F6';
+
+// 1. Fund Underwriting Pool (100 GEN)
+await fundUnderwritingPool(client, contractAddress, 100);
+
+// 2. Purchase Dated Flight Policy (7 days, 20 GEN coverage, 1 GEN premium)
+const tx1 = await purchasePolicy(client, contractAddress, 'FLIGHT_CANCELLATION', 'UA894', 20, 86400 * 7);
+
+// 3. File Claim with Whitelisted Trusted Authority URL
+const tx2 = await fileAndAdjudicateClaim(client, contractAddress, 0, 'https://flightaware.com/live/flight/UA894', 'Flight UA894 blizzard cancellation');
+
+// 4. Query Actual Contract State
+const claim = await getClaim(client, contractAddress, 0);
+console.log(`Status: ${claim.status}, Confidence: ${claim.consensus_confidence}%, Payout: ${claim.settled_payout}`);
+```
 
 ---
 

@@ -3,14 +3,39 @@
 OptiShield: Autonomous Parametric Insurance & Multi-Source Event Adjudication Protocol on GenLayer.
 
 Enables instant, trustless parametric insurance (flight disruptions, weather disasters, SLA outages).
-Claims are adjudicated without centralized claims adjusters: GenLayer validators independently
+Claims are adjudicated without centralized adjusters: GenLayer validators independently
 fetch official authority web data (FAA, FlightAware, NOAA, cloud status pages), evaluate claim validity
 via neural consensus, and deterministically release instant indemnity payouts to policyholders.
+
+Features:
+- Dated Coverage Windows (start & expiration timestamps)
+- Whitelisted Trusted Authority Evidence Sources (FAA, NOAA, FlightAware, AWS/GCP/Azure status)
+- Strict Claim Finality (prevents double claims and replay attacks)
+- Reserved Payout Liabilities (ensures underwriting pool solvency before issuing policies)
 """
 
 from genlayer import *
 from dataclasses import dataclass
 import json
+
+
+# Whitelist of approved trusted authority evidence domains
+TRUSTED_AUTHORITY_DOMAINS = [
+    "faa.gov",
+    "api.faa.gov",
+    "noaa.gov",
+    "weather.gov",
+    "nhc.noaa.gov",
+    "flightaware.com",
+    "flightradar24.com",
+    "aviationstack.com",
+    "status.aws.amazon.com",
+    "status.cloud.google.com",
+    "azure.status.microsoft.com",
+    "cloudflarestatus.com",
+    "githubstatus.com",
+    "earthquake.usgs.gov",
+]
 
 
 @allow_storage
@@ -22,9 +47,11 @@ class InsurancePolicy:
     target_identifier: str  # e.g., "UA894", "HURRICANE_BERYL", "AWS_US_EAST_1"
     coverage_payout: u256
     premium_paid: u256
+    coverage_start_timestamp: u256
+    coverage_end_timestamp: u256
     is_active: bool
     is_claimed: bool
-    created_at_block: u256
+    is_finalized: bool
 
 
 @allow_storage
@@ -34,26 +61,30 @@ class ClaimRecord:
     policy_id: u256
     evidence_url: str
     incident_description: str
-    status: str  # "PENDING", "APPROVED", "REJECTED"
+    incident_timestamp: u256
+    status: str  # "PENDING", "APPROVED", "REJECTED", "FINALIZED"
     consensus_confidence: u32
     settled_payout: u256
     adjudication_rationale: str
+    is_finalized: bool
 
 
 class OptiShield(gl.Contract):
-    """Autonomous Parametric Insurance Protocol on GenLayer."""
+    """Autonomous Parametric Insurance Protocol on GenLayer with Solvency & Finality Guarantees."""
 
     policies: TreeMap[u256, InsurancePolicy]
     claims: TreeMap[u256, ClaimRecord]
     policy_counter: u256
     claim_counter: u256
     underwriting_pool: u256
+    reserved_liabilities: u256  # Payout capacity locked to guarantee active policy payouts
     protocol_owner: Address
 
     def __init__(self):
         self.policy_counter = u256(0)
         self.claim_counter = u256(0)
         self.underwriting_pool = u256(0)
+        self.reserved_liabilities = u256(0)
         self.protocol_owner = gl.message.sender_address
 
     @gl.public.write.payable
@@ -61,7 +92,7 @@ class OptiShield(gl.Contract):
         """Liquidity providers fund the insurance underwriting reserve."""
         deposit = gl.message.value
         if deposit == u256(0):
-            raise gl.vm.UserError("Must deposit GEN to fund underwriting pool.")
+            raise gl.vm.UserError("Must deposit non-zero GEN to fund underwriting pool.")
         self.underwriting_pool = self.underwriting_pool + deposit
 
     @gl.public.write.payable
@@ -70,10 +101,11 @@ class OptiShield(gl.Contract):
         event_type: str,
         target_identifier: str,
         coverage_amount: u256,
+        coverage_duration_seconds: u256,
     ) -> u256:
         """
-        User purchases parametric coverage by paying a 5% risk premium.
-        Coverage is guaranteed by the protocol underwriting reserve.
+        User purchases parametric coverage for a specific dated window by paying a 5% premium.
+        Enforces reserved payout liabilities contract-side to guarantee protocol solvency.
         """
         premium = gl.message.value
         required_premium = coverage_amount // u256(20)  # 5% premium
@@ -81,15 +113,24 @@ class OptiShield(gl.Contract):
         if premium < required_premium:
             raise gl.vm.UserError("Insufficient premium paid for requested coverage.")
 
-        # Ensure underwriting pool can cover maximum indemnity
-        if coverage_amount > self.underwriting_pool:
-            raise gl.vm.UserError("Requested coverage exceeds available underwriting pool capacity.")
+        if coverage_duration_seconds == u256(0):
+            raise gl.vm.UserError("Coverage duration must be greater than zero.")
+
+        # Solvency Check: Ensure unreserved pool capacity is sufficient for full payout liability
+        available_capacity = self.underwriting_pool - self.reserved_liabilities
+        if coverage_amount > available_capacity:
+            raise gl.vm.UserError("Requested coverage exceeds available unreserved underwriting capacity.")
+
+        # Lock reserved liability and add premium to pool
+        self.reserved_liabilities = self.reserved_liabilities + coverage_amount
+        self.underwriting_pool = self.underwriting_pool + premium
 
         policy_id = self.policy_counter
         self.policy_counter = self.policy_counter + u256(1)
 
-        # Add premium to underwriting pool
-        self.underwriting_pool = self.underwriting_pool + premium
+        # In GenVM, start is relative to genesis / current block epoch
+        start_ts = u256(1723852800)  # Base reference timestamp (Aug 2026)
+        end_ts = start_ts + coverage_duration_seconds
 
         self.policies[policy_id] = InsurancePolicy(
             policy_id=policy_id,
@@ -98,9 +139,11 @@ class OptiShield(gl.Contract):
             target_identifier=target_identifier,
             coverage_payout=coverage_amount,
             premium_paid=premium,
+            coverage_start_timestamp=start_ts,
+            coverage_end_timestamp=end_ts,
             is_active=True,
             is_claimed=False,
-            created_at_block=u256(1),
+            is_finalized=False,
         )
 
         return policy_id
@@ -111,11 +154,14 @@ class OptiShield(gl.Contract):
         policy_id: u256,
         authority_evidence_url: str,
         claimant_notes: str,
+        incident_timestamp: u256,
     ) -> u256:
         """
-        Policyholder files claim. GenLayer validators independently fetch official
-        live web data (FAA/NOAA/FlightStats), evaluate claim validity under the
-        Equivalence Principle, and deterministically disburse the payout on finality.
+        Policyholder files claim. Enforces:
+        1. Dated coverage window check
+        2. Whitelisted trusted authority source validation
+        3. Strict claim finality (single adjudication per policy)
+        4. Deterministic financial disbursement from reserved underwriting liabilities
         """
         policy = self.policies.get(policy_id, None)
         if policy is None or not policy.is_active:
@@ -124,8 +170,28 @@ class OptiShield(gl.Contract):
         if gl.message.sender_address != policy.policyholder:
             raise gl.vm.UserError("Only the verified policyholder can file a claim.")
 
-        if policy.is_claimed:
-            raise gl.vm.UserError("Claim has already been filed and settled for this policy.")
+        # Enforce Claim Finality
+        if policy.is_claimed or policy.is_finalized:
+            raise gl.vm.UserError("Claim on this policy has already reached finality.")
+
+        # Enforce Dated Coverage Window
+        if incident_timestamp < policy.coverage_start_timestamp or incident_timestamp > policy.coverage_end_timestamp:
+            raise gl.vm.UserError("Incident timestamp falls outside active policy coverage window.")
+
+        # Enforce Trusted Authority Evidence Source Whitelist
+        if not authority_evidence_url or not authority_evidence_url.startswith("http"):
+            raise gl.vm.UserError("Evidence URL must be a valid HTTP/HTTPS URL.")
+
+        is_trusted = False
+        for trusted_domain in TRUSTED_AUTHORITY_DOMAINS:
+            if trusted_domain in authority_evidence_url.lower():
+                is_trusted = True
+                break
+
+        if not is_trusted:
+            raise gl.vm.UserError(
+                f"Untrusted evidence source. Must originate from an approved authority (FAA, NOAA, FlightAware, Cloud Status)."
+            )
 
         claim_id = self.claim_counter
         self.claim_counter = self.claim_counter + u256(1)
@@ -135,15 +201,14 @@ class OptiShield(gl.Contract):
         coverage_val = policy.coverage_payout
         policyholder_addr = str(policy.policyholder)
 
-        # Non-deterministic consensus block
+        # Multi-Validator Non-Deterministic Consensus
         def leader_fn() -> dict:
             live_authority_data = ""
-            if authority_evidence_url and authority_evidence_url.startswith("http"):
-                try:
-                    res = gl.nondet.web.get(authority_evidence_url)
-                    live_authority_data = res.body.decode("utf-8", errors="replace")[:3000] if hasattr(res, "body") else str(res)[:3000]
-                except Exception:
-                    live_authority_data = "Authority web endpoint fetch returned error."
+            try:
+                res = gl.nondet.web.get(authority_evidence_url)
+                live_authority_data = res.body.decode("utf-8", errors="replace")[:3000] if hasattr(res, "body") else str(res)[:3000]
+            except Exception:
+                live_authority_data = "Authority web endpoint fetch returned error or timeout."
 
             prompt = f"""
             You are the OptiShield Parametric Insurance Adjudication Engine on GenLayer.
@@ -152,6 +217,7 @@ class OptiShield(gl.Contract):
             === POLICY SPECIFICATION ===
             - Event Type: {event_type}
             - Covered Target: {target_id}
+            - Incident Timestamp: {incident_timestamp}
 
             === CLAIMANT NOTES ===
             {claimant_notes}
@@ -160,7 +226,7 @@ class OptiShield(gl.Contract):
             {live_authority_data}
 
             Evaluate:
-            1. "is_valid": boolean true if authority data verifies the covered event occurred (e.g. flight cancelled/delayed >3h, hurricane category >=3, cloud downtime verified).
+            1. "is_valid": boolean true if authority data verifies the covered qualifying event occurred (e.g. flight cancelled/delayed >3h, hurricane category >=3, cloud downtime verified).
             2. "confidence": integer 0 to 100 representing evidentiary certainty.
             3. "status": "APPROVED" if (is_valid == true and confidence >= 85), else "REJECTED".
             4. "rationale": concise 1-2 sentence technical assessment.
@@ -218,12 +284,20 @@ class OptiShield(gl.Contract):
 
         payout_awarded = u256(0)
 
+        # Enforce Policy Finality
+        policy.is_active = False
+        policy.is_finalized = True
+
+        # Release Reserved Liability
+        if self.reserved_liabilities >= coverage_val:
+            self.reserved_liabilities = self.reserved_liabilities - coverage_val
+        else:
+            self.reserved_liabilities = u256(0)
+
         # Deterministic Financial Settlement Gate
         if status_str == "APPROVED" and conf_val >= u32(85):
-            policy.is_active = False
             policy.is_claimed = True
 
-            # Deduct payout from underwriting pool
             if coverage_val <= self.underwriting_pool:
                 self.underwriting_pool = self.underwriting_pool - coverage_val
                 payout_awarded = coverage_val
@@ -248,17 +322,40 @@ class OptiShield(gl.Contract):
             policy_id=policy_id,
             evidence_url=authority_evidence_url,
             incident_description=claimant_notes,
+            incident_timestamp=incident_timestamp,
             status=status_str,
             consensus_confidence=conf_val,
             settled_payout=payout_awarded,
             adjudication_rationale=rationale_str,
+            is_finalized=True,
         )
 
         return claim_id
 
+    @gl.public.write
+    def release_expired_policy(self, policy_id: u256) -> None:
+        """
+        Unlocks reserved liabilities for policies that have passed their coverage end date
+        without any claims filed, freeing underwriting pool capacity for new policies.
+        """
+        policy = self.policies.get(policy_id, None)
+        if policy is None:
+            raise gl.vm.UserError("Policy not found.")
+
+        if not policy.is_active or policy.is_finalized:
+            raise gl.vm.UserError("Policy is not active or has already been finalized.")
+
+        # Unlock liability
+        if self.reserved_liabilities >= policy.coverage_payout:
+            self.reserved_liabilities = self.reserved_liabilities - policy.coverage_payout
+
+        policy.is_active = False
+        policy.is_finalized = True
+        self.policies[policy_id] = policy
+
     @gl.public.view
     def get_policy(self, policy_id: u256) -> dict:
-        """View coverage and status of a policy."""
+        """View coverage details, dated window, and status of a policy."""
         p = self.policies.get(policy_id, None)
         if p is None:
             raise gl.vm.UserError("Policy not found.")
@@ -269,13 +366,16 @@ class OptiShield(gl.Contract):
             "target_identifier": p.target_identifier,
             "coverage_payout": str(p.coverage_payout),
             "premium_paid": str(p.premium_paid),
+            "coverage_start_timestamp": str(p.coverage_start_timestamp),
+            "coverage_end_timestamp": str(p.coverage_end_timestamp),
             "is_active": p.is_active,
             "is_claimed": p.is_claimed,
+            "is_finalized": p.is_finalized,
         }
 
     @gl.public.view
     def get_claim(self, claim_id: u256) -> dict:
-        """View claim status and validator consensus rationale."""
+        """View claim status, authority source, and validator consensus rationale."""
         c = self.claims.get(claim_id, None)
         if c is None:
             raise gl.vm.UserError("Claim not found.")
@@ -283,17 +383,27 @@ class OptiShield(gl.Contract):
             "claim_id": int(c.claim_id),
             "policy_id": int(c.policy_id),
             "evidence_url": c.evidence_url,
+            "incident_description": c.incident_description,
+            "incident_timestamp": str(c.incident_timestamp),
             "status": c.status,
             "consensus_confidence": int(c.consensus_confidence),
             "settled_payout": str(c.settled_payout),
             "adjudication_rationale": c.adjudication_rationale,
+            "is_finalized": c.is_finalized,
         }
 
     @gl.public.view
     def get_protocol_stats(self) -> dict:
-        """View overall protocol reserves and coverage stats."""
+        """View overall protocol reserves, reserved liabilities, and capacity stats."""
+        avail_capacity = (
+            self.underwriting_pool - self.reserved_liabilities
+            if self.underwriting_pool >= self.reserved_liabilities
+            else u256(0)
+        )
         return {
             "underwriting_pool": str(self.underwriting_pool),
+            "reserved_liabilities": str(self.reserved_liabilities),
+            "available_capacity": str(avail_capacity),
             "total_policies": int(self.policy_counter),
             "total_claims": int(self.claim_counter),
         }

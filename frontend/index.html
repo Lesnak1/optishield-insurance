@@ -6,17 +6,20 @@
     <title>OptiShield — Autonomous Parametric Insurance on GenLayer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-page: #090d16;
-            --bg-card: rgba(18, 24, 38, 0.75);
+            --bg-card: rgba(18, 24, 38, 0.85);
+            --bg-card-inner: rgba(0, 0, 0, 0.4);
             --border-card: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(0, 245, 160, 0.35);
             --accent-cyan: #00f2fe;
             --accent-blue: #4facfe;
             --accent-purple: #8a2be2;
             --accent-emerald: #00f5a0;
             --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
             --font-sans: 'Plus Jakarta Sans', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
         }
@@ -30,7 +33,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 40px 20px;
+            padding: 30px 20px 60px;
             overflow-x: hidden;
             position: relative;
         }
@@ -40,22 +43,22 @@
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 1000px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(0, 245, 160, 0.08) 0%, rgba(79, 172, 254, 0.06) 50%, transparent 70%);
-            filter: blur(90px);
+            width: 1100px;
+            height: 650px;
+            background: radial-gradient(circle, rgba(0, 245, 160, 0.09) 0%, rgba(79, 172, 254, 0.06) 50%, transparent 70%);
+            filter: blur(100px);
             pointer-events: none;
             z-index: 0;
         }
 
         .container {
-            max-width: 1140px;
+            max-width: 1200px;
             width: 100%;
             position: relative;
             z-index: 1;
             display: flex;
             flex-direction: column;
-            gap: 32px;
+            gap: 24px;
         }
 
         /* Navbar */
@@ -66,8 +69,10 @@
             padding: 16px 24px;
             background: var(--bg-card);
             border: 1px solid var(--border-card);
-            border-radius: 18px;
-            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            backdrop-filter: blur(25px);
+            flex-wrap: wrap;
+            gap: 16px;
         }
 
         .brand-logo {
@@ -81,11 +86,18 @@
             -webkit-text-fill-color: transparent;
         }
 
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         .network-badge {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--accent-emerald);
             background: rgba(0, 245, 160, 0.1);
@@ -113,16 +125,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
-            margin: 10px 0 20px;
+            gap: 10px;
+            margin: 5px 0 10px;
         }
 
         .hero h1 {
-            font-size: 44px;
+            font-size: 40px;
             font-weight: 800;
             letter-spacing: -1px;
-            line-height: 1.2;
-            max-width: 800px;
+            line-height: 1.15;
+            max-width: 860px;
         }
 
         .hero h1 span {
@@ -132,48 +144,108 @@
         }
 
         .hero p {
-            font-size: 16px;
+            font-size: 15px;
             color: #94a3b8;
-            max-width: 640px;
+            max-width: 720px;
             line-height: 1.6;
+        }
+
+        /* Config Bar */
+        .config-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 18px;
+            padding: 16px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            align-items: end;
+            backdrop-filter: blur(20px);
         }
 
         /* Grid */
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1.1fr 1fr;
-            gap: 28px;
+            gap: 24px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 950px) {
             .dashboard-grid { grid-template-columns: 1fr; }
         }
 
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border-card);
-            border-radius: 24px;
-            padding: 28px;
+            border-radius: 22px;
+            padding: 24px;
             backdrop-filter: blur(20px);
             display: flex;
             flex-direction: column;
             gap: 18px;
+            transition: border-color 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--border-highlight);
         }
 
         .card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            border-bottom: 1px solid var(--border-card);
+            padding-bottom: 12px;
         }
 
         .card-title {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
+        /* Tabs */
+        .tabs-header {
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border-card);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(0, 245, 160, 0.15), rgba(0, 242, 254, 0.15));
+            color: var(--accent-emerald);
+            border: 1px solid rgba(0, 245, 160, 0.3);
+        }
+
+        .tab-pane {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .tab-pane.active {
+            display: flex;
+        }
+
+        /* Form Controls */
         .form-group {
             display: flex;
             flex-direction: column;
@@ -181,86 +253,196 @@
         }
 
         .form-label {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .form-input, .form-textarea {
-            background: rgba(0, 0, 0, 0.3);
+        .form-input, .form-textarea, .form-select {
+            background: var(--bg-card-inner);
             border: 1px solid var(--border-card);
             border-radius: 12px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             color: #f8fafc;
             font-family: var(--font-sans);
-            font-size: 14px;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            width: 100%;
         }
 
-        .form-input:focus, .form-textarea:focus {
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
             outline: none;
             border-color: var(--accent-emerald);
             box-shadow: 0 0 12px rgba(0, 245, 160, 0.25);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 70px;
         }
 
         .btn-action {
             background: linear-gradient(135deg, var(--accent-emerald), var(--accent-cyan));
             color: #090d16;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             border: none;
             border-radius: 12px;
-            padding: 14px 20px;
+            padding: 12px 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 16px rgba(0, 245, 160, 0.25);
+            box-shadow: 0 4px 16px rgba(0, 245, 160, 0.2);
         }
 
-        .btn-action:hover {
+        .btn-action:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(0, 245, 160, 0.4);
+            box-shadow: 0 6px 22px rgba(0, 245, 160, 0.35);
         }
 
+        .btn-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #f8fafc;
+            border: 1px solid var(--border-card);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #94a3b8;
+            box-shadow: none;
+        }
+
+        /* Status Badges */
         .status-pill {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             padding: 4px 12px;
             border-radius: 999px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
         }
 
         .status-approved {
-            background: rgba(0, 245, 160, 0.15);
+            background: rgba(0, 245, 160, 0.12);
             color: var(--accent-emerald);
             border: 1px solid rgba(0, 245, 160, 0.3);
         }
 
         .status-pending {
-            background: rgba(245, 158, 11, 0.15);
+            background: rgba(245, 158, 11, 0.12);
             color: var(--accent-amber);
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
-        .audit-log {
-            background: rgba(0, 0, 0, 0.4);
+        .status-rejected {
+            background: rgba(244, 63, 94, 0.12);
+            color: var(--accent-rose);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        /* Info Box */
+        .info-panel {
+            background: var(--bg-card-inner);
             border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding-bottom: 6px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .info-k { color: #94a3b8; }
+        .info-v { font-family: var(--font-mono); color: #f8fafc; font-weight: 600; }
+
+        /* Confidence Matrix */
+        .score-matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            background: var(--bg-card-inner);
+            padding: 14px;
             border-radius: 16px;
-            padding: 16px;
+            border: 1px solid var(--border-card);
+        }
+
+        .score-box {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .score-value {
+            font-size: 28px;
+            font-weight: 800;
             font-family: var(--font-mono);
-            font-size: 12px;
+            color: var(--accent-emerald);
+        }
+
+        .score-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+        }
+
+        /* Audit Log */
+        .audit-log {
+            background: var(--bg-card-inner);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 14px;
+            font-family: var(--font-mono);
+            font-size: 11.5px;
             color: #cbd5e1;
-            max-height: 200px;
+            max-height: 180px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
+
+        .log-entry {
+            line-height: 1.4;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding-bottom: 3px;
+            word-break: break-all;
+        }
+
+        .log-time { color: #94a3b8; }
+        .log-ok { color: var(--accent-emerald); }
+        .log-info { color: var(--accent-cyan); }
+        .log-warn { color: var(--accent-amber); }
+        .log-err { color: var(--accent-rose); }
     </style>
 </head>
 <body>
@@ -270,132 +452,451 @@
         <!-- Navbar -->
         <nav>
             <div class="brand-logo">
-                <svg width="24" height="24" viewBox="0 0 98 92" fill="none">
-                    <polygon fill="#00F5A0" points="44.26,32.35 27.72,67.12 43.29,74.9 0,91.93 44.26,0 44.26,32.35"/>
-                    <polygon fill="#00F2FE" points="53.5,32.35 70.04,67.12 54.47,74.9 97.76,91.93 53.5,0 53.5,32.35"/>
-                    <polygon fill="#8A2BE2" points="48.64,43.78 58.33,62.94 48.64,67.69 39.47,62.92 48.64,43.78"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(0, 245, 160, 0.15)" stroke="#00f5a0"/>
                 </svg>
                 OptiShield
             </div>
-            <div class="network-badge">
-                <div class="pulse-dot"></div>
-                GenLayer Bradbury Testnet (4221)
+            <div class="nav-controls">
+                <div class="network-badge" id="netBadge">
+                    <div class="pulse-dot"></div>
+                    GenLayer Bradbury (4221)
+                </div>
+                <div class="status-pill status-approved" id="accountBadge" style="font-family: var(--font-mono); font-size: 11px;">
+                    0x...
+                </div>
             </div>
         </nav>
 
         <!-- Hero -->
         <div class="hero">
-            <h1>Autonomous Parametric <span>Disaster & Flight Insurance</span></h1>
-            <p>Zero-claims-adjuster parametric coverage settled instantly via decentralized neural validator consensus against live FAA, FlightAware, and NOAA authority data.</p>
+            <h1>Autonomous Parametric <span>Insurance Protocol</span></h1>
+            <p>Instant indemnity settlement resolved via multi-validator neural consensus grounded on official live authority web telemetry (FAA, FlightAware, NOAA, Cloud Status).</p>
         </div>
 
-        <!-- Dashboard -->
+        <!-- Connection & Config Bar -->
+        <div class="config-bar">
+            <div class="form-group">
+                <label class="form-label">Network & RPC</label>
+                <select class="form-select" id="networkSelect">
+                    <option value="testnetBradbury" selected>GenLayer Bradbury Testnet (4221)</option>
+                    <option value="studionet">GenLayer StudioNet (4222)</option>
+                    <option value="localnet">Local GenVM Node</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contract Address</label>
+                <input type="text" class="form-input" id="contractAddressInput" value="0xd9F9C1c91aeb2022bdBaA9b7a535b9796b8fB8F6">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Private Key (Optional)</label>
+                <input type="password" class="form-input" id="pkInput" placeholder="Auto-generated if empty">
+            </div>
+            <button class="btn-action btn-secondary" id="reconnectBtn" style="height: 42px;">
+                🔄 Connect / Generate
+            </button>
+        </div>
+
+        <!-- Main Dashboard Grid -->
         <div class="dashboard-grid">
             
-            <!-- Policy Purchase & Claim -->
+            <!-- Left Card: Protocol Operations -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">✈️ Active Policy #0x01 (Flight Disruption)</div>
-                    <span class="status-pill status-pending" id="policyStatus">Coverage Active</span>
+                    <div class="card-title">🛡️ Policy & Underwriting Operations</div>
+                    <span class="status-pill status-pending" id="opStatusPill">Ready</span>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Covered Target (Flight ID)</label>
-                    <input type="text" class="form-input" value="United Airlines UA894 (SFO -> JFK)" readonly>
+                <!-- Tabs -->
+                <div class="tabs-header">
+                    <button class="tab-btn active" onclick="switchTab('tab-pool')">1. Pool Reserves</button>
+                    <button class="tab-btn" onclick="switchTab('tab-policy')">2. Buy Dated Policy</button>
+                    <button class="tab-btn" onclick="switchTab('tab-claim')">3. File Claim</button>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Indemnity Coverage / Premium</label>
-                    <input type="text" class="form-input" value="40.00 GEN Payout (2.00 GEN Premium Paid)" readonly>
+                <!-- Tab 1: Underwriting Pool -->
+                <div class="tab-pane active" id="tab-pool">
+                    <div class="info-panel">
+                        <div class="info-row">
+                            <span class="info-k">Total Underwriting Pool:</span>
+                            <span class="info-v" id="poolTotalDisp" style="color: var(--accent-emerald);">-- GEN</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-k">Reserved Payout Liabilities:</span>
+                            <span class="info-v" id="poolReservedDisp" style="color: var(--accent-amber);">-- GEN</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-k">Available Capacity (Solvency Gate):</span>
+                            <span class="info-v" id="poolAvailDisp" style="color: var(--accent-cyan);">-- GEN</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Add Liquidity Deposit (GEN)</label>
+                        <input type="number" step="0.1" class="form-input" id="fundPoolAmount" value="50.0">
+                    </div>
+                    <button class="btn-action" id="btnFundPool">
+                        💧 Fund Underwriting Pool
+                    </button>
                 </div>
 
-                <hr style="border: none; border-top: 1px solid var(--border-card); margin: 2px 0;">
-
-                <div class="card-title" style="font-size: 15px;">🚩 File Incident Claim</div>
-
-                <div class="form-group">
-                    <label class="form-label">Official Authority Telemetry URL (FAA / FlightAware)</label>
-                    <input type="text" class="form-input" id="flightUrl" value="https://flightaware.com/api/status/UA894">
+                <!-- Tab 2: Purchase Dated Policy -->
+                <div class="tab-pane" id="tab-policy">
+                    <div class="form-group">
+                        <label class="form-label">Parametric Event Type</label>
+                        <select class="form-select" id="policyEventType">
+                            <option value="FLIGHT_CANCELLATION" selected>Flight Cancellation / Severe Delay (>3h)</option>
+                            <option value="WEATHER_DISASTER">Major Hurricane / Weather Disaster (Category >=3)</option>
+                            <option value="CLOUD_SLA">Cloud Outage / API Downtime (>99.9% SLA Breach)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Covered Target Identifier</label>
+                        <input type="text" class="form-input" id="policyTargetId" value="UA894">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Coverage Indemnity Payout (GEN)</label>
+                        <input type="number" step="0.1" class="form-input" id="policyCoverageAmount" value="20.0">
+                        <small style="color: #94a3b8; font-size: 11px;">Requires 5% premium (1.00 GEN) locked against pool capacity</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Coverage Duration (Dated Window)</label>
+                        <select class="form-select" id="policyDuration">
+                            <option value="86400">24 Hours (1 Day)</option>
+                            <option value="604800" selected>7 Days (1 Week)</option>
+                            <option value="2592000">30 Days (1 Month)</option>
+                        </select>
+                    </div>
+                    <button class="btn-action" id="btnPurchasePolicy">
+                        🔒 Purchase Policy & Lock Liability
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Claimant Incident Summary</label>
-                    <input type="text" class="form-input" value="Flight UA894 was officially cancelled at gate due to severe blizzard conditions.">
+                <!-- Tab 3: File Incident Claim -->
+                <div class="tab-pane" id="tab-claim">
+                    <div class="form-group">
+                        <label class="form-label">Policy ID</label>
+                        <input type="number" class="form-input" id="claimPolicyId" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Trusted Authority Evidence Source (Whitelisted)</label>
+                        <input type="text" class="form-input" id="claimEvidenceUrl" value="https://flightaware.com/live/flight/UA894">
+                        <small style="color: var(--accent-cyan); font-size: 11px;">Allowed: faa.gov, flightaware.com, noaa.gov, weather.gov, status.aws.amazon.com, cloudflarestatus.com</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Incident Description & Claimant Notes</label>
+                        <textarea class="form-textarea" id="claimNotes">Flight UA894 from ORD to SFO was officially cancelled due to severe blizzards. Official FlightAware telemetry attached.</textarea>
+                    </div>
+                    <button class="btn-action" id="btnFileClaim">
+                        ⚖️ File Claim & Trigger Validator Consensus
+                    </button>
                 </div>
-
-                <button class="btn-action" id="claimBtn" onclick="processClaim()">
-                    ⚖️ Trigger Neural Consensus Adjudication
-                </button>
             </div>
 
-            <!-- Adjudication Outcome -->
+            <!-- Right Card: Live Contract State & Consensus Verdict -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">⚖️ Consensus Adjudication & Payout</div>
-                    <span class="status-pill status-pending" id="verdictPill">Awaiting Claim</span>
+                    <div class="card-title">⚖️ Live GenLayer Contract State</div>
+                    <button class="btn-action btn-secondary" id="btnRefreshState" style="padding: 6px 12px; font-size: 12px;">
+                        🔄 Fetch State
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Validator Consensus Rationale</label>
-                    <textarea class="form-textarea" id="rationaleText" readonly style="min-height: 80px;">Click 'Trigger Neural Consensus Adjudication' to independently verify authority web data across GenLayer validators.</textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Deterministic On-Chain Settlement</label>
-                    <div id="payoutResult" style="font-size: 13px; color: #94a3b8;">
-                        Pending validator agreement on authority evidence (Requires confidence >= 85).
+                <!-- Matrix -->
+                <div class="score-matrix">
+                    <div class="score-box">
+                        <span class="score-value" id="dispConfidence">--</span>
+                        <span class="score-label">Consensus Confidence</span>
+                    </div>
+                    <div class="score-box">
+                        <span class="score-value" id="dispSettledPayout" style="color: var(--accent-emerald);">-- GEN</span>
+                        <span class="score-label">Indemnity Payout</span>
                     </div>
                 </div>
 
-                <!-- Audit Log -->
+                <!-- Live State Panel -->
+                <div class="info-panel">
+                    <div class="info-row">
+                        <span class="info-k">Claim Status:</span>
+                        <span class="status-pill status-pending" id="dispClaimStatus">AWAITING QUERY</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-k">Policy Finality:</span>
+                        <span class="info-v" id="dispFinality">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-k">Coverage Window:</span>
+                        <span class="info-v" id="dispCoverageDates" style="font-size: 11px;">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-k">Latest Transaction:</span>
+                        <span class="info-v" id="dispLatestTx" style="font-size: 11px;">None</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Neural Validator Consensus Rationale</label>
+                    <textarea class="form-textarea" id="dispRationale" readonly style="min-height: 55px;">Querying contract storage on GenLayer...</textarea>
+                </div>
+
+                <!-- Live Audit Stream -->
                 <div class="audit-log" id="auditLog">
-                    <div>[System] Initialized OptiShield underwriting pool on GenVM.</div>
-                    <div>[Reserve] 200.0 GEN available in underwriting capacity.</div>
+                    <div class="log-entry"><span class="log-time">[System]</span> Initializing OptiShield client...</div>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <script>
-        function processClaim() {
-            const btn = document.getElementById('claimBtn');
+    <!-- GenLayer Client Script Integration -->
+    <script type="module">
+        import { createClient, createAccount, generatePrivateKey } from 'https://esm.sh/genlayer-js@1.2.0';
+        import { testnetBradbury, studionet, localnet } from 'https://esm.sh/genlayer-js@1.2.0/chains';
+
+        let client = null;
+        let currentAccount = null;
+
+        function addLog(msg, type = 'info') {
             const log = document.getElementById('auditLog');
-            btn.innerHTML = "⏳ Validators Fetching Live Authority Data...";
-            btn.disabled = true;
-
-            function addLog(msg, color='#cbd5e1') {
-                const div = document.createElement('div');
-                div.style.color = color;
-                div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-                log.appendChild(div);
-                log.scrollTop = log.scrollHeight;
-            }
-
-            addLog("Leader validator querying FlightAware live telemetry for UA894...", "#00f2fe");
-
-            setTimeout(() => {
-                addLog("Telemetry received: Status = CANCELLED (Blizzard Alert).", "#00f2fe");
-                addLog("Validators verifying Equivalence Principle (±6 pt confidence check)...", "#00f2fe");
-
-                setTimeout(() => {
-                    document.getElementById('policyStatus').className = "status-pill status-approved";
-                    document.getElementById('policyStatus').innerText = "CLAIM SETTLED";
-
-                    document.getElementById('verdictPill').className = "status-pill status-approved";
-                    document.getElementById('verdictPill').innerText = "APPROVED (CONF: 98%)";
-
-                    document.getElementById('rationaleText').value = "5/5 Validators agreed: FlightAware official authority telemetry confirms flight UA894 was officially CANCELLED due to blizzard alert. Qualifying event confirmed.";
-
-                    document.getElementById('payoutResult').innerHTML = "✅ <strong style='color: #00f5a0'>40.00 GEN Indemnity Disbursed</strong> directly to policyholder on finality.";
-
-                    addLog("Consensus reached: 98% confidence on qualifying cancellation.", "#00f5a0");
-                    addLog("Deterministic Gate: Emitted 40 GEN transfer to policyholder.", "#00f5a0");
-
-                    btn.innerHTML = "✅ Indemnity Payout Settled";
-                }, 1200);
-            }, 1000);
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${msg}</span>`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
         }
+
+        function getSelectedChain() {
+            const val = document.getElementById('networkSelect').value;
+            if (val === 'studionet') return studionet;
+            if (val === 'localnet') return localnet;
+            return testnetBradbury;
+        }
+
+        function initClient() {
+            try {
+                const chain = getSelectedChain();
+                const pkInput = document.getElementById('pkInput').value.trim();
+                const pk = pkInput ? (pkInput.startsWith('0x') ? pkInput : '0x' + pkInput) : generatePrivateKey();
+                
+                currentAccount = createAccount(pk);
+                client = createClient({
+                    chain: chain,
+                    account: currentAccount,
+                });
+
+                const addr = currentAccount.address;
+                const shortAddr = addr.slice(0, 6) + '...' + addr.slice(-4);
+                document.getElementById('accountBadge').innerText = shortAddr;
+                document.getElementById('netBadge').innerHTML = `<div class="pulse-dot"></div> ${chain.name}`;
+
+                addLog(`Connected account: ${addr} on ${chain.name}`, 'ok');
+                refreshContractState();
+            } catch (err) {
+                addLog(`Client initialization error: ${err.message}`, 'err');
+            }
+        }
+
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        };
+
+        // 1. Fund Underwriting Pool
+        document.getElementById('btnFundPool').addEventListener('click', async () => {
+            const btn = document.getElementById('btnFundPool');
+            try {
+                btn.disabled = true;
+                btn.innerText = '⏳ Funding Underwriting Pool...';
+
+                const contractAddr = document.getElementById('contractAddressInput').value.trim();
+                const amount = parseFloat(document.getElementById('fundPoolAmount').value);
+                const depositWei = BigInt(Math.floor(amount * 1e18));
+
+                addLog(`Calling fund_underwriting_pool with ${amount} GEN...`, 'info');
+
+                const txHash = await client.writeContract({
+                    address: contractAddr,
+                    functionName: 'fund_underwriting_pool',
+                    args: [],
+                    value: depositWei,
+                });
+
+                addLog(`Pool Funding Tx: ${txHash}`, 'ok');
+                updateTxDisplay(txHash);
+
+                addLog('Waiting for transaction confirmation...', 'info');
+                await client.waitForTransactionReceipt({ hash: txHash });
+                addLog('Underwriting pool liquidity funded successfully!', 'ok');
+
+                await refreshContractState();
+            } catch (err) {
+                addLog(`Fund Pool Error: ${err.message}`, 'err');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '💧 Fund Underwriting Pool';
+            }
+        });
+
+        // 2. Purchase Dated Policy
+        document.getElementById('btnPurchasePolicy').addEventListener('click', async () => {
+            const btn = document.getElementById('btnPurchasePolicy');
+            try {
+                btn.disabled = true;
+                btn.innerText = '⏳ Purchasing Dated Policy...';
+
+                const contractAddr = document.getElementById('contractAddressInput').value.trim();
+                const eventType = document.getElementById('policyEventType').value;
+                const targetId = document.getElementById('policyTargetId').value.trim();
+                const coverage = parseFloat(document.getElementById('policyCoverageAmount').value);
+                const coverageWei = BigInt(Math.floor(coverage * 1e18));
+                const premiumWei = coverageWei / BigInt(20); // 5%
+                const duration = BigInt(document.getElementById('policyDuration').value);
+
+                addLog(`Purchasing policy for ${targetId} (${eventType}) with ${coverage} GEN coverage...`, 'info');
+                addLog(`Solvency Gate: Locking ${coverage} GEN in reserved liabilities against pool...`, 'info');
+
+                const txHash = await client.writeContract({
+                    address: contractAddr,
+                    functionName: 'purchase_policy',
+                    args: [eventType, targetId, coverageWei, duration],
+                    value: premiumWei,
+                });
+
+                addLog(`Policy Purchase Tx: ${txHash}`, 'ok');
+                updateTxDisplay(txHash);
+
+                addLog('Waiting for transaction finality...', 'info');
+                await client.waitForTransactionReceipt({ hash: txHash });
+                addLog(`Policy successfully issued and liability reserved!`, 'ok');
+
+                await refreshContractState();
+            } catch (err) {
+                addLog(`Purchase Policy Error: ${err.message}`, 'err');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '🔒 Purchase Policy & Lock Liability';
+            }
+        });
+
+        // 3. File Claim & Trigger Validator Consensus
+        document.getElementById('btnFileClaim').addEventListener('click', async () => {
+            const btn = document.getElementById('btnFileClaim');
+            try {
+                btn.disabled = true;
+                btn.innerText = '⏳ Validators Fetching Live Authority Telemetry...';
+
+                const contractAddr = document.getElementById('contractAddressInput').value.trim();
+                const policyId = BigInt(document.getElementById('claimPolicyId').value);
+                const evidenceUrl = document.getElementById('claimEvidenceUrl').value.trim();
+                const notes = document.getElementById('claimNotes').value.trim();
+                const incidentTs = BigInt(1723852800 + 3600);
+
+                addLog(`Filing claim for Policy #${policyId} via trusted authority (${evidenceUrl})...`, 'info');
+                addLog('Validators fetching live telemetry and evaluating Equivalence Principle...', 'info');
+
+                const txHash = await client.writeContract({
+                    address: contractAddr,
+                    functionName: 'file_and_adjudicate_claim',
+                    args: [policyId, evidenceUrl, notes, incidentTs],
+                });
+
+                addLog(`Claim Adjudication Tx: ${txHash}`, 'ok');
+                updateTxDisplay(txHash);
+
+                addLog('Polling for validator consensus finality and disbursement...', 'info');
+                await client.waitForTransactionReceipt({ hash: txHash });
+                addLog('Consensus reached and indemnity disbursed to policyholder on finality!', 'ok');
+
+                await refreshContractState();
+            } catch (err) {
+                addLog(`Claim Adjudication Error: ${err.message}`, 'err');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '⚖️ File Claim & Trigger Validator Consensus';
+            }
+        });
+
+        // 4. Dynamic Contract State Query (Replaces hard-coded displays)
+        async function refreshContractState() {
+            try {
+                const contractAddr = document.getElementById('contractAddressInput').value.trim();
+
+                // 1. Protocol Stats
+                const stats = await client.readContract({
+                    address: contractAddr,
+                    functionName: 'get_protocol_stats',
+                    args: [],
+                });
+
+                if (stats) {
+                    const totalPool = (Number(stats.underwriting_pool) / 1e18).toFixed(2);
+                    const reserved = (Number(stats.reserved_liabilities) / 1e18).toFixed(2);
+                    const avail = (Number(stats.available_capacity) / 1e18).toFixed(2);
+
+                    document.getElementById('poolTotalDisp').innerText = `${totalPool} GEN`;
+                    document.getElementById('poolReservedDisp').innerText = `${reserved} GEN`;
+                    document.getElementById('poolAvailDisp').innerText = `${avail} GEN`;
+                }
+
+                // 2. Query Active Policy / Claim
+                const policyId = BigInt(document.getElementById('claimPolicyId').value);
+                const policy = await client.readContract({
+                    address: contractAddr,
+                    functionName: 'get_policy',
+                    args: [policyId],
+                });
+
+                if (policy) {
+                    document.getElementById('dispFinality').innerText = policy.is_finalized ? 'FINALIZED' : (policy.is_active ? 'ACTIVE' : 'INACTIVE');
+                    const start = new Date(Number(policy.coverage_start_timestamp) * 1000).toLocaleDateString();
+                    const end = new Date(Number(policy.coverage_end_timestamp) * 1000).toLocaleDateString();
+                    document.getElementById('dispCoverageDates').innerText = `${start} → ${end}`;
+                }
+
+                const claim = await client.readContract({
+                    address: contractAddr,
+                    functionName: 'get_claim',
+                    args: [policyId],
+                });
+
+                if (claim) {
+                    document.getElementById('dispConfidence').innerText = `${claim.consensus_confidence}%`;
+                    const payoutGen = (Number(claim.settled_payout) / 1e18).toFixed(2);
+                    document.getElementById('dispSettledPayout').innerText = `${payoutGen} GEN`;
+                    document.getElementById('dispRationale').value = claim.adjudication_rationale || 'No rationale recorded.';
+
+                    const pill = document.getElementById('dispClaimStatus');
+                    pill.innerText = claim.status;
+                    if (claim.status === 'APPROVED') {
+                        pill.className = 'status-pill status-approved';
+                    } else if (claim.status === 'REJECTED') {
+                        pill.className = 'status-pill status-rejected';
+                    } else {
+                        pill.className = 'status-pill status-pending';
+                    }
+
+                    addLog(`Contract State: Claim #${claim.claim_id} Status=${claim.status}, Confidence=${claim.consensus_confidence}%, Payout=${payoutGen} GEN`, 'ok');
+                }
+            } catch (err) {
+                addLog(`Read Contract State: ${err.message}`, 'warn');
+            }
+        }
+
+        function updateTxDisplay(hash) {
+            const shortHash = hash.slice(0, 10) + '...' + hash.slice(-8);
+            const chain = getSelectedChain();
+            const explorerUrl = chain.blockExplorers?.default?.url ? `${chain.blockExplorers.default.url}tx/${hash}` : `https://explorer-bradbury.genlayer.com/tx/${hash}`;
+            document.getElementById('dispLatestTx').innerHTML = `<a href="${explorerUrl}" target="_blank" style="color: var(--accent-emerald); text-decoration: none;">${shortHash} ↗</a>`;
+        }
+
+        document.getElementById('btnRefreshState').addEventListener('click', refreshContractState);
+        document.getElementById('reconnectBtn').addEventListener('click', initClient);
+        document.getElementById('networkSelect').addEventListener('change', initClient);
+
+        initClient();
     </script>
 </body>
 </html>
