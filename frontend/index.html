@@ -792,7 +792,7 @@
                 const policyId = BigInt(document.getElementById('claimPolicyId').value);
                 const evidenceUrl = document.getElementById('claimEvidenceUrl').value.trim();
                 const notes = document.getElementById('claimNotes').value.trim();
-                const incidentTs = BigInt(1723852800 + 3600);
+                const incidentTs = BigInt(Math.floor(Date.now() / 1000));
 
                 addLog(`Filing claim for Policy #${policyId} via trusted authority (${evidenceUrl})...`, 'info');
                 addLog('Validators fetching live telemetry and evaluating Equivalence Principle...', 'info');

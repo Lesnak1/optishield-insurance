@@ -130,7 +130,7 @@ export async function fileAndAdjudicateClaim(
   policyId: bigint | number,
   authorityEvidenceUrl: string,
   claimantNotes: string,
-  incidentTimestamp: bigint | number = 1723852800 + 3600
+  incidentTimestamp: bigint | number = Math.floor(Date.now() / 1000)
 ): Promise<`0x${string}`> {
   const txHash = await client.writeContract({
     address: contractAddress,

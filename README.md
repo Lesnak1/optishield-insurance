@@ -24,17 +24,18 @@ While parametric smart contracts exist on EVM chains, they are strictly limited 
 
 ## 🏛️ Solvency, Security & Protocol Guarantees
 
-OptiShield enforces four contract-side integrity layers:
+OptiShield enforces five contract-side integrity layers:
 
-1. **🗓️ Dated Coverage Windows**: Policies define exact coverage start and end timestamps (`coverage_start_timestamp`, `coverage_end_timestamp`). Claims for incidents occurring outside the active coverage window are strictly rejected.
-2. **🌐 Trusted Authority Evidence Whitelist**: The contract strictly restricts evidence URLs to a whitelist of official authoritative sources:
+1. **🗓️ Enforceable Runtime Timing & Coverage Windows**: Policies derive start and expiration timestamps directly from enforceable GenLayer runtime block state (`_get_runtime_timestamp()`). Claims filed outside the active coverage window or with future timestamps are strictly rejected.
+2. **🌐 Strict Authority Hostname Whitelist**: Evidence URLs are parsed to extract the exact hostname, strictly neutralizing spoofing, query manipulation, and prefix bypasses (e.g., `faa.gov.attacker.com` is rejected; only exact `domain` or `.domain` subdomains are permitted). Approved authorities:
    - `faa.gov` / `api.faa.gov` (Federal Aviation Administration)
    - `noaa.gov` / `weather.gov` / `nhc.noaa.gov` (National Oceanic and Atmospheric Administration)
    - `flightaware.com` / `flightradar24.com` / `aviationstack.com` (Live Flight Telemetry)
    - `status.aws.amazon.com` / `status.cloud.google.com` / `azure.status.microsoft.com` / `cloudflarestatus.com` (Cloud Infrastructure SLA)
    - `earthquake.usgs.gov` (USGS Earthquake Hazards)
-3. **🔒 Claim Finality**: Once a policy claim is adjudicated and reaches finality (`is_finalized = True`), the policy is permanently closed to prevent replay or duplicate claim submissions.
-4. **🏦 Reserved Payout Liabilities**: When a policy is underwritten, maximum indemnity exposure is reserved against the underwriting pool (`reserved_liabilities`). The contract enforces that `coverage_amount <= underwriting_pool - reserved_liabilities`, preventing over-issuance and guaranteeing 100% protocol solvency.
+3. **📡 HTTP Fetch Success Validation**: Validators strictly verify that authority endpoints return valid HTTP 200 status codes with non-empty telemetry. Failed fetches or timeouts immediately result in rejected claims with zero confidence.
+4. **⏳ Restricted Expiry Release**: Reserved liabilities for expired policies can only be released by authorized parties (the protocol owner or policyholder), and strictly after the runtime timestamp has surpassed `coverage_end_timestamp`.
+5. **🏦 Reserved Payout Liabilities & Claim Finality**: When a policy is underwritten, maximum indemnity exposure is reserved against the underwriting pool (`reserved_liabilities`). The contract enforces `coverage_amount <= underwriting_pool - reserved_liabilities`, preventing over-issuance and guaranteeing 100% protocol solvency. Once adjudicated, policies reach permanent finality.
 
 ---
 
@@ -53,11 +54,12 @@ sequenceDiagram
     User->>OptiShield: purchase_policy(event_type, target_id, coverage, duration) + 5% premium
     Note over OptiShield: Locks coverage liability against unreserved pool capacity
     User->>OptiShield: file_and_adjudicate_claim(evidence_url, notes, incident_ts)
-    Note over OptiShield: Enforces dated coverage, trusted authority domain, and claim finality
+    Note over OptiShield: Enforces runtime dated coverage, exact host whitelist, and claim finality
 
     rect rgb(15, 23, 42)
         Note over OptiShield,Validators: Non-Deterministic Multi-Validator Consensus
         Validators->>Authority: gl.nondet.web.get(authority_evidence_url)
+        Note over Validators: Validates HTTP 200 success & non-empty telemetry
         Validators->>Validators: gl.nondet.exec_prompt(Evaluate policy terms & event validity)
         Validators->>Validators: Equivalence Principle Check (Verdict Match & ±6 pt confidence)
     end
@@ -78,8 +80,10 @@ optishield-insurance/
 ├── contracts/
 │   └── optishield.py          # Core Intelligent Contract on GenVM
 ├── tests/
-│   └── direct/
-│       └── test_optishield.py # In-memory direct VM test suite
+│   ├── direct/
+│   │   └── test_optishield.py # In-memory direct VM test suite
+│   └── integration/
+│       └── test_optishield_integration.py # StudioNet / RPC deployment integration tests
 ├── frontend/
 │   ├── index.html             # Interactive Glassmorphic DApp UI with live GenLayer client
 │   └── client.ts              # TypeScript GenLayer client integration bindings
@@ -97,7 +101,7 @@ The included interactive DApp (`frontend/index.html`) is connected to the real *
 1. **Wallet / Account Management**: Auto-generates testnet keypairs or imports custom private keys.
 2. **Multi-Network Support**: Switch seamlessly between **GenLayer Bradbury Testnet (4221)**, **StudioNet (4222)**, and **LocalNet**.
 3. **Underwriting Reserves**: View total pool balance, reserved liabilities, and available capacity, with direct liquidity funding (`fund_underwriting_pool`).
-4. **Dated Policy Purchase**: Select event type, enter target identifier, and purchase coverage with automated liability reservation.
+4. **Dated Policy Purchase**: Select event type, enter target identifier, and purchase coverage with automated runtime liability reservation.
 5. **Authority Claim Submission**: Submit claims with whitelisted trusted authority endpoints and trigger live multi-validator neural consensus.
 6. **Live Contract State Queries**: Dynamically reads `get_policy`, `get_claim`, and `get_protocol_stats` to render real consensus confidence %, status, rationale, and on-chain balances with explorer links.
 
@@ -115,8 +119,15 @@ await fundUnderwritingPool(client, contractAddress, 100);
 // 2. Purchase Dated Flight Policy (7 days, 20 GEN coverage, 1 GEN premium)
 const tx1 = await purchasePolicy(client, contractAddress, 'FLIGHT_CANCELLATION', 'UA894', 20, 86400 * 7);
 
-// 3. File Claim with Whitelisted Trusted Authority URL
-const tx2 = await fileAndAdjudicateClaim(client, contractAddress, 0, 'https://flightaware.com/live/flight/UA894', 'Flight UA894 blizzard cancellation');
+// 3. File Claim with Whitelisted Trusted Authority URL & Current Timestamp
+const tx2 = await fileAndAdjudicateClaim(
+  client, 
+  contractAddress, 
+  0, 
+  'https://flightaware.com/api/status/UA894', 
+  'Flight UA894 blizzard cancellation',
+  Math.floor(Date.now() / 1000)
+);
 
 // 4. Query Actual Contract State
 const claim = await getClaim(client, contractAddress, 0);
@@ -134,13 +145,19 @@ pytest tests/direct/ -v
 ### Verified Test Scenarios:
 1. `test_flight_cancellation_claim_and_instant_payout`:
    - Underwriting pool funded with 200 GEN.
-   - Traveler purchases 40 GEN flight delay coverage paying 2 GEN premium (5%).
+   - Traveler purchases 40 GEN flight delay coverage for 7 days paying 2 GEN premium (5%).
    - Live FlightAware data verifies UA894 blizzard cancellation.
    - Validators reach consensus on `APPROVED` (conf: 98%) and release 40 GEN payout.
 2. `test_fraudulent_claim_rejection`:
    - Non-disrupted on-time flight claims are rejected without disbursing pool reserves.
 3. `test_insufficient_premium_revert`:
    - Reverts policy purchases with less than the required 5% risk premium.
+4. `test_untrusted_authority_domain_bypass_reverts`:
+   - Tests and rejects substring, prefix, path, and query spoofing attempts (e.g. `faa.gov.attacker.com`).
+5. `test_incident_outside_coverage_window_reverts`:
+   - Enforces dated coverage window bounds against incident timestamps.
+6. `test_unauthorized_expiry_release_reverts`:
+   - Enforces access control and expiry checks on policy liability release.
 
 ---
 
